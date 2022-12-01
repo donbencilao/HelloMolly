@@ -1,33 +1,70 @@
 import React, {useState} from 'react';
 import axios from "axios";
+import ReactPaginate from 'react-paginate';
+import SearchBox from "./searchbox";
+import Gallery from "./gallery";
 
-export const Button = ({handler,label,testid})=>{
-    return <button data-testid={testid} onClick={handler}>{label}</button>
-}
 
-function Search(){
+function Search({API_URL,CLIENT_ID}){
     const [keyword, setKeyword] = useState("")
     const [photoResults, setPhotoResults] = useState([])
+    const [resultTotalPages, setResultTotalPages] = useState(-1)
+
+    /**
+     * Handler for update photo gallery
+     * @param event
+     */
+    const handlePageClick = (event) => {
+        const page = event.selected + 1;
+        callApi(page).then()
+    };
+
+    /**
+     * Calls the unsplash search api to get photo results
+     * @param page
+     * @returns {Promise<void>}
+     */
     const callApi = async (page)=>{
-        //call unsplash api with axios here
-        const url = `https://api.unsplash.com/search/photos?page=${page}&query=${keyword}&client_id=HETzfvQXJwR2mSvoVFhaIXj0K1R9tBKw80Wlcu0UuY0`
-        const res = await axios.get(url)
-        setPhotoResults(()=>res.data.results)
-        console.log({res})
+        //keyword validation, This will prevent unnecessary api calls.
+        if(!keyword){
+           return
+        }
+        if(keyword === window.sessionStorage.getItem("keyword") && window.sessionStorage.getItem("page") === page){
+            return
+        }
+        //----
+        window.sessionStorage.setItem("keyword",keyword)
+        window.sessionStorage.setItem("page",page)
+        try{
+            const url = `${API_URL}/photos?page=${page}&per_page=12&query=${keyword}&client_id=${CLIENT_ID}`
+            const res = await axios.get(url)
+            console.log(res)
+            setPhotoResults(()=>res.data.results)
+            setResultTotalPages(()=>res.data.total_pages)
+        }catch (e) {
+            alert("Something went wrong, please try again")
+        }
+
     }
     return <div className={"container mt-5"}>
-        <div className="relative">
-            <input type="search" id="default-search" aria-label="search-input" onChange={(event)=>setKeyword(event.target.value)}
-                   className="block w-full p-3 pl-10 text-lg text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                   placeholder="Search Mockups, Logos..." required/>
-                <button onClick={callApi} type="submit" className="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Search
-                </button>
-        </div>
-        <div className={"grid grid-cols-4"}>
-            {photoResults && photoResults.map((data)=>{
-                return <div className={"w-auto h-60"} style={{backgroundImage: `url(${data.urls.regular})`,backgroundSize:'cover',backgroundPosition:'center'}}></div>
-            })}
-        </div>
+        <SearchBox callApi={callApi} setKeyword={setKeyword}/>
+        {resultTotalPages === -1 && <p className={"my-4 text-center"} data-testid={"default-msg"}>Please enter the nice things you want to see :)</p>}
+        {resultTotalPages === 0 && <p className={"my-4 text-center"} data-testid={"sorry-msg"}>Sorry, we don't have that in our collection, please try a different word.</p>}
+        <Gallery photoResults={photoResults} />
+
+        {/*Simple pagination to navigate around the results*/}
+        {resultTotalPages > 0 && <ReactPaginate
+            className={"flex my-3 p-2"}
+            pageClassName={"flex-auto text-center"}
+            activeClassName={"text-blue-700 font-bold"}
+            breakLabel="..."
+            nextLabel=" >>"
+            onPageChange={handlePageClick}
+            pageRangeDisplayed={5}
+            pageCount={resultTotalPages}
+            previousLabel="<< "
+            renderOnZeroPageCount={null}
+        />}
 
     </div>
 }
