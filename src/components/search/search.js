@@ -9,13 +9,13 @@ function Search({API_URL,CLIENT_ID}){
     const [keyword, setKeyword] = useState("")
     const [photoResults, setPhotoResults] = useState([])
     const [resultTotalPages, setResultTotalPages] = useState(-1)
-
+    const [currentPage, setCurrentPage] = useState(0)
     /**
      * Handler for update photo gallery
      * @param event
      */
     const handlePageClick = (event) => {
-        const page = event.selected + 1;
+        const page = event.selected;
         callApi(page).then()
     };
 
@@ -24,7 +24,7 @@ function Search({API_URL,CLIENT_ID}){
      * @param page
      * @returns {Promise<void>}
      */
-    const callApi = async (page)=>{
+    const callApi = async (page = 0)=>{
         //keyword validation, This will prevent unnecessary api calls.
         if(!keyword){
            return
@@ -35,10 +35,10 @@ function Search({API_URL,CLIENT_ID}){
         //----
         window.sessionStorage.setItem("keyword",keyword)
         window.sessionStorage.setItem("page",page)
+        setCurrentPage(()=>page)
         try{
             const url = `${API_URL}/photos?page=${page}&per_page=12&query=${keyword}&client_id=${CLIENT_ID}`
             const res = await axios.get(url)
-            console.log(res)
             setPhotoResults(()=>res.data.results)
             setResultTotalPages(()=>res.data.total_pages)
         }catch (e) {
@@ -61,6 +61,7 @@ function Search({API_URL,CLIENT_ID}){
             nextLabel=" >>"
             onPageChange={handlePageClick}
             pageRangeDisplayed={5}
+            forcePage={currentPage}
             pageCount={resultTotalPages}
             previousLabel="<< "
             renderOnZeroPageCount={null}

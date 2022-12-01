@@ -1,8 +1,14 @@
 import React from 'react';
 
 const SearchBox = ({callApi,setKeyword})=>{
+    const handleKeyPress = (event) => {
+        if(event.keyCode === 13) {
+            callApi()
+        }
+    }
    return <div className="relative">
        <input type="search" id="default-search" aria-label="search-input" onChange={(event)=>setKeyword(event.target.value)}
+              onKeyDown={handleKeyPress}
               className="block w-full p-3 pl-10 text-lg text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Type in keyword here..." required/>
        <button onClick={callApi} type="submit" data-testid={"search-btn"}
